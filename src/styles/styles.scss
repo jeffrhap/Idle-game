@@ -1,5 +1,15 @@
 $dark-color: #30333c;
 
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  padding: 16px;
+}
+
 .title {
   color: $dark-color;
 }

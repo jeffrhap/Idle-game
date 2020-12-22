@@ -7,6 +7,11 @@ import '../styles/styles.scss';
 // Beter tools can be earned / bought later to upgrade autoharvesting of wood
 // Used for early base building too
 
+// 2. Explore
+// Exploring gives you rewards, randomly at the start
+// One of these rewards is people you can recruit
+// Later you can specify what you want to explore for (loot, resources, people...?)
+
 // 2. People?
 // Start recruiting people slowly
 // People can be put to workto auto gather
@@ -38,8 +43,39 @@ let gameData = {
 
 const savegame = JSON.parse(localStorage.getItem("saveGame"))
 if (savegame !== null) {
-  gameData = savegame
+    gameData = savegame
 }
+
+const upgrades = [
+    {
+        "title": "Craft pickaxe",
+        "cost": "1",
+        "increase": "0.1"
+    },
+    {
+        "title": "Craft wooden leg",
+        "cost": "1",
+        "increase": "0.3"
+    },
+    {
+        "title": "Craft stick",
+        "cost": "1",
+        "increase": "0"
+    },
+    {
+        "title": "Whack robot",
+        "cost": "0",
+        "increase": "0"
+    }
+];
+
+const initGame = () => {
+    document.querySelector('.wood').innerHTML = `${gameData.wood.toFixed(1)} Wood chopped`;
+    document.querySelector('.cost').innerHTML =
+            "Upgrade Axe (Currently Level " + gameData.woodPerClick.toFixed(1) + ") Cost: " + gameData.woodCost.toFixed(1) + " Wood";
+}
+
+initGame();
 
 const chopWood = () => {
     gameData.wood += gameData.woodPerClick;
@@ -51,17 +87,19 @@ const woodUpgrade = () => {
         gameData.wood -= gameData.woodCost;
         gameData.woodCost *= 1.2;
         gameData.woodPerClick += 0.1;
-        document.querySelector('.cost').innerHTML = 
+        document.querySelector('.wood').innerHTML = `${gameData.wood} Wood chopped`;
+        document.querySelector('.cost').innerHTML =
             "Upgrade Axe (Currently Level " + gameData.woodPerClick + ") Cost: " + gameData.woodCost + " Wood";
     }
 }
 
 const gameLoop = setInterval(() => {
-    chopWood();    
+    
 }, 1000);
 
 const saveLoop = setInterval(() => {
     localStorage.setItem('saveGame', JSON.stringify(gameData));
 }, 15000);
 
+document.querySelector('[data-button=click]').addEventListener('click', () => chopWood());
 document.querySelector('[data-button=wood]').addEventListener('click', () => woodUpgrade());
