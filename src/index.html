@@ -1,16 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>Document</title>
+  <title>Idle Game</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css" />
 </head>
+
 <body>
-  <h1 class="title" data-button="click">Idle Game</h1>
-  <text class="wood"></text>
-  <div class="button" data-button="wood">Buy</div>
-  <text class="cost"></text>
+  <div class="main">
+    <h1 class="title" data-button="click">Gather</h1>
+    <text class="wood"></text>
+  </div>
+
+  <div class="ui-tabs">
+    <div class="tabbar">
+      <div class="item" data-tab-open="tools">Tools</div>
+      <div class="item" data-tab-open="upgrades">Upgrades</div>
+      <div class="item">Companion</div>
+    </div>
+    <div class="tabs-holder">
+      <div class="tab" data-tab="tools"></div>
+      <div class="tab" data-tab="upgrades"></div>
+    </div>
+  </div>
 </body>
+
 </html>

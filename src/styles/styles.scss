@@ -1,15 +1,65 @@
-$dark-color: #30333c;
+$dark-color: #000;
 
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 body {
-  padding: 16px;
 }
 
-.title {
-  color: $dark-color;
+.main {
+    .title {
+      text-align: center;
+        color: $dark-color;
+    }
+
+    text {
+      display: block;
+      text-align: center;
+    }
+}
+
+.ui-tabs {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+.tabbar {
+    position: relative;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+
+    .item {
+        padding: 8px;
+        width: calc(100% / 3);
+        text-align: center;
+        background-color: grey;
+        border: 1px solid #000;
+    }
+}
+
+.tabs-holder {
+    position: relative;
+
+    .tab {
+        display: none;
+        padding: 8px;
+        &.active {
+            display: block;
+        }
+
+        .item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px;
+            margin-bottom: 4px;
+            background-color: lightgray;
+        }
+    }
 }
