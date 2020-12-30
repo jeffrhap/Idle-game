@@ -1,4 +1,5 @@
 import '../styles/styles.scss';
+import { SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS } from 'constants';
 
 // RESOURCES
 // 1. Wood
@@ -18,6 +19,11 @@ import '../styles/styles.scss';
 // Need to build houses to be able to recruit more people
 // Later people can be upgraded to armies (min number of people required)
 // Something with generals and special (tiered) loot for army bonusses
+
+// 2. Robot is companion
+// Used for autharvesting, just as humans
+// Can be upgraded much more
+// Used in prestiging (gets certain multipliers after prestige)
 
 // 2. Stone
 // Upgrade all wooden tools
@@ -56,14 +62,14 @@ const upgrades = [
         "name": "Craft wooden leg",
         "cost": 1,
         "resource": "wood",
-        "increase": 0.3,
+        "increase": 0.1,
         "upgradesRequired": [],
         "active": false
     },
     {
         "id": 1,
         "name": "Craft axe",
-        "cost": 1,
+        "cost": 2,
         "resource": "wood",
         "increase": 0.1,
         "upgradesRequired": [],
@@ -72,7 +78,7 @@ const upgrades = [
     {
         "id": 2,
         "name": "Craft stick",
-        "cost": 1,
+        "cost": 5,
         "resource": "wood",
         "increase": 0,
         "upgradesRequired": [],
@@ -89,13 +95,47 @@ const upgrades = [
     }
 ];
 
+const exploration = [
+    {
+        "id": 0,
+        "name": "Explore",
+        "cost": [
+            {
+                "wood": 5
+            }
+        ],
+        "duration": 5,
+        "loot": [
+            {
+                "resource": "wood",
+                "amount": 10,
+                "chance": 85
+            },
+            {
+                "resource": "people",
+                "amount": 1,
+                "chance": 10
+            }
+        ]
+    }
+]
+
+const companion = {
+    "resourcePerTick": "0.5"
+}
+
 let gameData = {
-    version: 0.06,
+    version: 0.09,
     resources: {
         wood: 0
     },
+    followers: {
+        "people": 0
+    },
     tools: tools,
-    upgrades: upgrades
+    upgrades: upgrades,
+    explorations: exploration,
+    companion: companion
 }
 
 // Check if save exists
@@ -111,7 +151,7 @@ const updateUpgrades = () => {
     const newUpgrades = gameData.upgrades.filter(upgrade => upgrade.active == false);
     const boughtUpgrades = gameData.upgrades.filter(upgrade => upgrade.active == true);
     const requirementsMet = newUpgrades.filter(upgrade => upgrade.upgradesRequired.length == 0 || boughtUpgrades.map(upgrade => upgrade.id).some(boughtId => upgrade.upgradesRequired.includes(boughtId)));
-    
+
     const upgradesHtml =
         requirementsMet.map(upgrade => {
             let item = document.createElement('div');
@@ -135,6 +175,35 @@ const updateUpgrades = () => {
     document.querySelector('[data-tab=upgrades]').append(...upgradesHtml);
 
     Array.from(document.querySelectorAll('[data-upgrade]')).map(upgradeButton => upgradeButton.addEventListener('click', (e) => activateUpgrade(e)));
+}
+
+const updateExplorations = () => {
+    const explorations = gameData.explorations;
+
+    const explorationsHtml =
+        explorations.map(exploration => {
+            let item = document.createElement('div');
+            item.classList.add('item');
+            item.dataset.exploration = exploration.id;
+
+            let explorationCopy = document.createElement('div');
+            explorationCopy.classList.add('cost');
+            explorationCopy.innerHTML = `${exploration.name} Cost: ${exploration.cost[0].wood} Wood`;
+
+            let button = document.createElement('div');
+            button.classList.add('button');
+            button.innerHTML = 'Go!';
+
+            item.append(explorationCopy);
+            item.append(button);
+
+            return item;
+        })
+
+    document.querySelector('[data-tab=explore]').innerHTML = '';
+    document.querySelector('[data-tab=explore]').append(...explorationsHtml);
+
+    Array.from(document.querySelectorAll('[data-exploration]')).map(upgradeButton => upgradeButton.addEventListener('click', (e) => activateExploration(e)));
 }
 
 // Initialize game
@@ -167,6 +236,7 @@ const initGame = () => {
 
     // Init upgrades tab
     updateUpgrades();
+    updateExplorations();
 }
 initGame();
 
@@ -191,7 +261,7 @@ const toolUpgrade = (e) => {
     if (gameData.resources.wood >= targetTool.upgradeCost) {
         gameData.resources.wood -= targetTool.upgradeCost;
         targetTool.level += 1;
-        targetTool.upgradeCost *= 1.2;
+        targetTool.upgradeCost = 1 * (Math.pow(1.15, targetTool.level));
         targetTool.resourcePerClick += 0.1;
         document.querySelector('.wood').innerHTML = `${gameData.resources.wood.toFixed(1)} Wood chopped`;
 
@@ -201,7 +271,6 @@ const toolUpgrade = (e) => {
 }
 
 const activateUpgrade = (e) => {
-    console.log('upgrade')
     const targetUpgradeId = e.currentTarget.dataset.upgrade;
     const targetUpgrade = gameData.upgrades.find(upgrade => upgrade.id == targetUpgradeId);
 
@@ -225,9 +294,80 @@ const activateUpgrade = (e) => {
     updateUpgrades();
 }
 
+const activateExploration = (e) => {
+    const targetExplorationId = e.currentTarget.dataset.exploration;
+    const targetExploration = gameData.explorations.find(exploration => exploration.id == targetExplorationId);
+
+    if (gameData.resources.wood >= targetExploration.cost[0].wood) {
+        const lootList = targetExploration.loot;
+        const randomNumber = (Math.random() * (+100 - +0) + +0).toFixed(1);
+
+        gameData.resources.wood -= targetExploration.cost[0].wood;
+
+        setTimeout(() => {
+            const loot = pickLoot(lootList);
+            const resource = loot.resource;
+            const amount = loot.amount;
+            
+            if (resource != 'people') {
+                gameData.resources[resource] += amount;
+            } else if (resource == 'people') {
+                gameData.followers.people += amount;
+            } else {
+                console.error('Unknown resource drop')
+            }
+            console.log('DROP: ', resource, ' ', amount)
+        }, targetExploration.duration * 1000);
+
+        document.querySelector('.wood').innerHTML = `${gameData.resources.wood.toFixed(1)} Wood chopped`;
+    }
+
+    updateExplorations();
+}
+
+const pickLoot = (list) => {
+    if (list.length === 0) return null;
+
+    var i, v;
+    var totalWeight = 0;
+    for (i = 0; i < list.length; i++) {
+        v = list[i];
+        if (v.amount > 0) {
+            totalWeight += v.chance;
+        }
+    }
+
+    var choice = 0;
+    var randomNumber = Math.floor(Math.random() * totalWeight + 1);
+    var weight = 0;
+
+    for (i = 0; i < list.length; i++) {
+        v = list[i];
+
+        if (v.amount <= 0) continue;
+        weight += v.chance;
+
+        if (randomNumber <= weight) {
+            choice = i;
+            break;
+        }
+    }
+
+    var chosenItem = list[choice];
+
+    return chosenItem;
+}
+
+const harvestResources = () => {
+    const harvestAmount = gameData.companion.resourcePerTick;
+    gameData.resources.wood += parseFloat(harvestAmount);
+    document.querySelector('.wood').innerHTML = `${gameData.resources.wood.toFixed(1)} Wood chopped`;
+}
+
 // Main game loop
 const gameLoop = setInterval(() => {
-
+    const automationEnabled = gameData.upgrades.filter(upgrade => (upgrade.id == 3 && upgrade.active == true)).length > 0;
+    automationEnabled ? harvestResources() : null;
 }, 1000);
 
 // Save game loop
