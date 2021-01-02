@@ -6,21 +6,23 @@ import { pickLoot } from './Loot';
 
 // RESOURCES
 // 1. Wood
-// Get 1 wood for pickaxe, 1 for leg, 1 for stick (to hit robot and wake it, starts autoharvesting 1 / s) (Upgrades) 
+// Get 1 wood for pickaxe, x for leg, x for stick (to hit robot and wake it, starts autoharvesting 2 / s) (Upgrades) 
 // Use wood to buy upgrades which increase harvesting amount (per click or for robot??)
 // Beter tools can be earned / bought later to upgrade autoharvesting of wood
 // Used for early base building too
 
 // 2. Explore
 // Exploring gives you rewards, randomly at the start
-// One of these rewards is people you can recruit
+// One of these rewards is people you can recruit, for every person you want to recruit you need a house
 // Later you can specify what you want to explore for (loot, resources, people...?)
 
 // 2. Followers
 // Start recruiting people slowly
-// People can be put to work to auto gather
+// People can be put to work to auto gather (1 / s)
 // Need to build houses to be able to recruit more people
-// Later people can be upgraded to armies (min number of people required)
+// People can be upgraded in several ways (for gathering, maybe fighting later?)
+// Upgrades for gathering improve auto gathering efficiency
+// possible upgrade to armies (min number of people required)
 // Something with generals and special (tiered) loot for army bonusses
 
 // 2. Robot is companion
@@ -44,12 +46,83 @@ import { pickLoot } from './Loot';
 
 // Prestige mechanism, fight AI, get piece of its knowledge, restart with better stats (randomized up certain stats??)
 
+// UI IDEAS
 
-// Load saveGame or create empty one
+// Main visual, start out with main character and robot
+// If you build more more houses and buildings appear on the map
+// Starts zooming out to a small village overview when you really build allot
+
+// Load saveGame or create new one
 const gameData = loadData();
 
-// Udate upgrades tab
+// Some global game variables
+let explorationActive = false;
+
+// Update tools tab
+const updateTools = () => {
+    const toolsTab = document.querySelector('[data-tab=tools]');
+    const tools = gameData.tools;
+
+    const toolsHtml =
+        tools.map(tool => {
+            let item = document.createElement('div');
+            item.classList.add('item');
+            item.dataset.tool = tool.id;
+
+            let contentHolder = document.createElement('div');
+            contentHolder.classList.add('content-holder');
+
+            let upgradeName = document.createElement('div');
+            upgradeName.classList.add('text-heading');
+            upgradeName.dataset.toolName = '';
+            upgradeName.innerHTML = `${tool.name}`;
+
+            let upgradeDescription = document.createElement('div');
+            upgradeDescription.classList.add('text-small', 'italic');
+            upgradeDescription.dataset.toolDescription = '';
+            upgradeDescription.innerHTML = `${tool.description}`;
+
+            let upgradeLevel = document.createElement('div');
+            upgradeLevel.classList.add('text-small');
+            upgradeLevel.dataset.toolLevel = '';
+            upgradeLevel.innerHTML = `Level ${tool.level}`;
+
+            let button = document.createElement('div');
+            button.classList.add('button');
+
+            let buttonCopy = document.createElement('div');
+            buttonCopy.classList.add('button-title');
+            buttonCopy.dataset.buttonTitle = '';
+            buttonCopy.innerHTML = 'Buy';
+
+            let buttonCost = document.createElement('div');
+            buttonCost.classList.add('button-small');
+            buttonCost.dataset.buttonCost = '';
+            buttonCost.innerHTML = `${tool.upgradeCost.toFixed(1)} Wood`;
+
+            contentHolder.append(upgradeName);
+            contentHolder.append(upgradeDescription);
+            contentHolder.append(upgradeLevel);
+
+            button.append(buttonCopy);
+            button.append(buttonCost);
+
+            item.append(contentHolder);
+            item.append(button);
+
+            return item;
+        });
+
+    toolsTab.innerHTML = '';
+    toolsTab.append(...toolsHtml);
+
+    Array.from(document.querySelectorAll('[data-tool]'))
+        .map(toolButton => toolButton.addEventListener('click', (e) => toolUpgrade(e)));
+}
+
+// Update upgrades tab
 const updateUpgrades = () => {
+    const upgradesTab = document.querySelector('[data-tab=upgrades]');
     const newUpgrades = gameData.upgrades.filter(upgrade => upgrade.active == false);
     const boughtUpgrades = gameData.upgrades.filter(upgrade => upgrade.active == true);
     const requirementsMet = newUpgrades.filter(upgrade => upgrade.upgradesRequired.length == 0 || boughtUpgrades.map(upgrade => upgrade.id).some(boughtId => upgrade.upgradesRequired.includes(boughtId)));
@@ -60,26 +133,57 @@ const updateUpgrades = () => {
             item.classList.add('item');
             item.dataset.upgrade = upgrade.id;
 
-            let upgradeCopy = document.createElement('div');
-            upgradeCopy.classList.add('cost');
-            upgradeCopy.innerHTML = `${upgrade.name} Cost: ${upgrade.cost.toFixed(1)} Wood`;
+            let contentHolder = document.createElement('div');
+            contentHolder.classList.add('content-holder');
+
+            let upgradeName = document.createElement('div');
+            upgradeName.classList.add('text-heading');
+            upgradeName.dataset.upgradeName = '';
+            upgradeName.innerHTML = `${upgrade.name}`;
+
+            let upgradeDescription = document.createElement('div');
+            upgradeDescription.classList.add('text-small', 'italic');
+            upgradeDescription.dataset.upgradeDescription = '';
+            upgradeDescription.innerHTML = `${upgrade.description}`;
 
             let button = document.createElement('div');
             button.classList.add('button');
-            button.innerHTML = 'Buy';
 
-            item.append(upgradeCopy);
+            let buttonCopy = document.createElement('div');
+            buttonCopy.classList.add('button-title');
+            buttonCopy.dataset.buttonTitle = '';
+            buttonCopy.innerHTML = 'Buy';
+
+            let buttonCost = document.createElement('div');
+            buttonCost.classList.add('button-small');
+            buttonCost.dataset.buttonCost = '';
+            buttonCost.innerHTML = `${upgrade.cost.toFixed(1)} Wood`;
+
+            contentHolder.append(upgradeName);
+            contentHolder.append(upgradeDescription);
+
+            button.append(buttonCopy);
+            button.append(buttonCost);
+
+            item.append(contentHolder);
             item.append(button);
 
             return item;
         });
-    document.querySelector('[data-tab=upgrades]').innerHTML = '';
-    document.querySelector('[data-tab=upgrades]').append(...upgradesHtml);
 
-    Array.from(document.querySelectorAll('[data-upgrade]')).map(upgradeButton => upgradeButton.addEventListener('click', (e) => activateUpgrade(e)));
+    upgradesTab.innerHTML = '';
+
+    upgradesHtml.length > 0 ?
+        upgradesTab.append(...upgradesHtml) :
+        upgradesTab.append('No upgrades currently available');
+
+    Array.from(document.querySelectorAll('[data-upgrade]'))
+        .map(upgradeButton => upgradeButton.addEventListener('click', (e) => activateUpgrade(e)));
 }
 
+// Update explorations tab
 const updateExplorations = () => {
+    const explorationsTab = document.querySelector('[data-tab=explore]');
     const explorations = gameData.explorations;
 
     const explorationsHtml =
@@ -88,53 +192,80 @@ const updateExplorations = () => {
             item.classList.add('item');
             item.dataset.exploration = exploration.id;
 
-            let explorationCopy = document.createElement('div');
-            explorationCopy.classList.add('cost');
-            explorationCopy.innerHTML = `${exploration.name} Cost: ${exploration.cost[0].wood} Wood`;
+            let contentHolder = document.createElement('div');
+            contentHolder.classList.add('content-holder');
+
+            let explorationName = document.createElement('div');
+            explorationName.classList.add('text-heading');
+            explorationName.dataset.explorationName = '';
+            explorationName.innerHTML = `${exploration.name}`;
+
+            let explorationDescription = document.createElement('div');
+            explorationDescription.classList.add('text-small', 'italic');
+            explorationDescription.dataset.explorationDescription = '';
+            explorationDescription.innerHTML = `${exploration.description}`;
+
+            let progressBar = document.createElement('div');
+            progressBar.classList.add('progress-holder');
+
+            let progressFill = document.createElement('div');
+            progressFill.classList.add('progress-fill');
+            progressFill.dataset.explorationProgress = '';
+
+            let progressTime = document.createElement('div');
+            progressTime.classList.add('progress-time');
+            progressTime.dataset.explorationTime = '';
+            progressTime.innerHTML = exploration.duration < 60 ?
+                `00:${exploration.duration}` :
+                `${exploration.duration / 60}:${exploration.duration - ((exploration.duration / 60) * 60)}`;
 
             let button = document.createElement('div');
             button.classList.add('button');
-            button.innerHTML = 'Go!';
 
-            item.append(explorationCopy);
+            let buttonCopy = document.createElement('div');
+            buttonCopy.classList.add('button-title');
+            buttonCopy.dataset.buttonTitle = '';
+            buttonCopy.innerHTML = 'Go!';
+
+            let buttonCost = document.createElement('div');
+            buttonCost.classList.add('button-small');
+            buttonCost.dataset.buttonCost = '';
+            buttonCost.innerHTML = `${exploration.cost[0].wood.toFixed(1)} Wood`;
+
+            contentHolder.append(explorationName);
+            contentHolder.append(explorationDescription);
+
+            progressBar.append(progressFill);
+            progressBar.append(progressTime);
+
+            button.append(buttonCopy);
+            button.append(buttonCost);
+
+            item.append(contentHolder);
+            item.append(progressBar);
             item.append(button);
 
             return item;
         })
 
-    document.querySelector('[data-tab=explore]').innerHTML = '';
-    document.querySelector('[data-tab=explore]').append(...explorationsHtml);
+    explorationsTab.innerHTML = '';
+    explorationsTab.append(...explorationsHtml);
 
-    Array.from(document.querySelectorAll('[data-exploration]')).map(upgradeButton => upgradeButton.addEventListener('click', (e) => activateExploration(e)));
+    Array.from(document.querySelectorAll('[data-exploration]'))
+        .map(upgradeButton => upgradeButton.addEventListener('click', (e) => activateExploration(e)));
+}
+
+const updateCompanion = () => {
+    
 }
 
 // Initialize game
 const initGame = () => {
     // Set resources gathered
-    document.querySelector('.wood').innerHTML = `${gameData.resources.wood.toFixed(1)} Wood chopped`;
+    document.querySelector('[data-resource=wood]').innerHTML = `${gameData.resources.wood.toFixed(1)} Wood chopped`;
 
     // Init tools tab
-    const tools = gameData.tools;
-    const toolsHtml =
-        tools.map(tool => {
-            let item = document.createElement('div');
-            item.classList.add('item');
-            item.dataset.tool = tool.id;
-
-            let upgradeCopy = document.createElement('div');
-            upgradeCopy.classList.add('cost');
-            upgradeCopy.innerHTML = `${tool.name} (Level ${tool.level}) Cost: ${tool.upgradeCost.toFixed(1)} Wood`;
-
-            let button = document.createElement('div');
-            button.classList.add('button');
-            button.innerHTML = 'Buy';
-
-            item.append(upgradeCopy);
-            item.append(button);
-
-            return item;
-        });
-    document.querySelector('[data-tab=tools]').append(...toolsHtml);
+    updateTools();
 
     // Init upgrades tab
     updateUpgrades();
@@ -169,9 +300,14 @@ const toolUpgrade = (e) => {
         targetTool.resourcePerClick += 0.1;
         document.querySelector('.wood').innerHTML = `${gameData.resources.wood.toFixed(1)} Wood chopped`;
 
-        document.querySelector(`[data-tool="${targetToolId}"] .cost`).innerHTML =
-            "Axe (Level " + targetTool.level + ") Cost: " + targetTool.upgradeCost.toFixed(1) + " Wood";
+        document.querySelector(`[data-tool="${targetToolId}"] [data-button-cost]`).innerHTML =
+            `${targetTool.upgradeCost.toFixed(1)} Wood`;
+
+        document.querySelector(`[data-tool="${targetToolId}"] [data-tool-level]`).innerHTML =
+            `Level ${targetTool.level}`;
     }
+
+    updateTools();
 }
 
 const activateUpgrade = (e) => {
@@ -202,13 +338,29 @@ const activateExploration = (e) => {
     const targetExplorationId = e.currentTarget.dataset.exploration;
     const targetExploration = gameData.explorations.find(exploration => exploration.id == targetExplorationId);
 
-    if (gameData.resources.wood >= targetExploration.cost[0].wood) {
-        const lootList = targetExploration.loot;
-        const randomNumber = (Math.random() * (+100 - +0) + +0).toFixed(1);
+    if (gameData.resources.wood >= targetExploration.cost[0].wood && explorationActive === false) {
+        explorationActive = true;
 
         gameData.resources.wood -= targetExploration.cost[0].wood;
+        document.querySelector('[data-resource=wood]').innerHTML = `${gameData.resources.wood.toFixed(1)} Wood chopped`;
+
+        let timer = 0;
+        const expeditionTimer = setInterval(() => {
+            timer++;
+
+            let progress = (100 / targetExploration.duration) * timer;
+           
+            document.querySelector(`[data-exploration="${targetExplorationId}"] [data-exploration-progress]`)
+                .style.width = `${progress}%`;
+
+            document.querySelector(`[data-exploration="${targetExplorationId}"] [data-exploration-time]`)
+                .innerHTML = `00:${("0" + (targetExploration.duration - timer)).slice(-2)}`;
+        }, 1000);
 
         setTimeout(() => {
+            clearInterval(expeditionTimer);
+
+            const lootList = targetExploration.loot;
             const loot = pickLoot(lootList);
             const resource = loot.resource;
             const amount = loot.amount;
@@ -221,30 +373,29 @@ const activateExploration = (e) => {
                 console.error('Unknown resource drop')
             }
             console.log('DROP: ', resource, ' ', amount)
+            document.querySelector('[data-resource=wood]').innerHTML = `${gameData.resources.wood.toFixed(1)} Wood chopped`;
+
+            updateExplorations();
         }, targetExploration.duration * 1000);
-
-        document.querySelector('.wood').innerHTML = `${gameData.resources.wood.toFixed(1)} Wood chopped`;
     }
-
-    updateExplorations();
 }
 
 const harvestResources = () => {
     const harvestAmount = gameData.companion.resourcePerTick;
     gameData.resources.wood += parseFloat(harvestAmount);
-    document.querySelector('.wood').innerHTML = `${gameData.resources.wood.toFixed(1)} Wood chopped`;
+    document.querySelector('[data-resource=wood]').innerHTML = `${gameData.resources.wood.toFixed(1)} Wood chopped`;
 }
 
 // Main game loop
 const gameLoop = setInterval(() => {
-    const automationEnabled = gameData.upgrades.filter(upgrade => (upgrade.id == 3 && upgrade.active == true)).length > 0;
+    const automationEnabled = gameData.upgrades.filter(upgrade => (upgrade.id == 2 && upgrade.active == true)).length > 0;
     automationEnabled ? harvestResources() : null;
 }, 1000);
 
 // Save game loop
 const saveLoop = setInterval(() => {
     saveData(gameData);
-}, 15000);
+}, 10000);
 
 // UI STUFF
 
@@ -261,8 +412,8 @@ const openTab = (e) => {
         targetTab.classList.toggle('active');
     }
 }
-Array.from(document.querySelectorAll('[data-tab-open]')).map(tab => tab.addEventListener('click', (e) => openTab(e)));
+Array.from(document.querySelectorAll('[data-tab-open]'))
+    .map(tab => tab.addEventListener('click', (e) => openTab(e)));
 
 // MISC EVENT LISTENERS
 document.querySelector('[data-button=click]').addEventListener('click', () => chopWood());
-Array.from(document.querySelectorAll('[data-tool]')).map(toolButton => toolButton.addEventListener('click', (e) => toolUpgrade(e)));

@@ -7,17 +7,46 @@ $dark-color: #000;
 }
 
 body {
+    font-family: "Lato", sans-serif;
+
+    h1,
+    h2,
+    h3 {
+        font-family: "Montserrat", sans-serif;
+    }
+
+    .text-heading {
+        font-family: "Montserrat", sans-serif;
+        font-size: 16px;
+    }
+
+    .text-small {
+        font-size: 13px;
+    }
+
+    .button-title {
+        font-family: "Montserrat", sans-serif;
+        font-size: 16px;   
+    }
+
+    .button-small {
+        font-size: 14px;
+    }
+
+    .italic {
+        font-style: italic;
+    }
 }
 
 .main {
     .title {
-      text-align: center;
+        text-align: center;
         color: $dark-color;
     }
 
-    text {
-      display: block;
-      text-align: center;
+    .resource {
+        display: block;
+        text-align: center;
     }
 }
 
@@ -60,6 +89,40 @@ body {
             padding: 4px;
             margin-bottom: 4px;
             background-color: lightgray;
+
+            .content-holder {
+                margin-right: 16px;
+            }
+
+            .progress-holder {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 100px;
+                height: 24px;
+                border: 1px solid grey;
+                position: relative;
+
+                .progress-fill {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    bottom: 0;
+                    height: 100%;
+                    background-color: lightgreen;
+                }
+
+                .progress-time {
+                    position: relative;
+                }
+            }
+
+            .button {
+                flex-shrink: 0;
+                padding: 8px 24px;
+                background-color: grey;
+                text-align: center;
+            }
         }
     }
 }
